@@ -37,44 +37,81 @@ export const evaluateNeetOMR = ({ answerKey, studentAnswers }) => {
   let unattemptedCount = 0;
   const wrongQuestions = [];
 
-  for (const [questionNumber, correctOption] of answerKeyMap.entries()) {
-    const subject = getSubject(questionNumber);
-    const studentEntry = studentMap.get(questionNumber);
+  // Each subject has 50 questions: 35 Mandatory + 15 Optional (only 10 count)
+  const blocks = [
+    { start: 1, end: 50, subject: "physics" },
+    { start: 51, end: 100, subject: "chemistry" },
+    { start: 101, end: 200, subject: "biology" } // 101-150 + 151-200
+  ];
 
-    if (!studentEntry || !studentEntry.selectedOption) {
-      unattemptedCount += 1;
-      continue;
-    }
+  const processBlock = (start, end, subject) => {
+    let blockMarks = 0;
+    // Section A (1-35 of total 50)
+    for (let q = start; q < start + 35; q++) {
+      const correctOption = answerKeyMap.get(q);
+      const studentEntry = studentMap.get(q);
+      if (!correctOption) continue;
 
-    if (studentEntry.selectedOption === correctOption) {
-      correctCount += 1;
-      totalMarks += 4;
-      if (subject === "physics") {
-        physicsMarks += 4;
-      } else if (subject === "chemistry") {
-        chemistryMarks += 4;
-      } else if (subject === "biology") {
-        biologyMarks += 4;
-      }
-    } else {
-      incorrectCount += 1;
-      totalMarks -= 1;
-      if (subject === "physics") {
-        physicsMarks -= 1;
-      } else if (subject === "chemistry") {
-        chemistryMarks -= 1;
-      } else if (subject === "biology") {
-        biologyMarks -= 1;
+      if (!studentEntry || !studentEntry.selectedOption) {
+        unattemptedCount += 1;
+        continue;
       }
 
-      wrongQuestions.push({
-        questionNumber,
-        subject,
-        selectedOption: studentEntry.selectedOption,
-        correctOption,
-      });
+      if (studentEntry.selectedOption === correctOption) {
+        correctCount += 1;
+        blockMarks += 4;
+      } else {
+        incorrectCount += 1;
+        blockMarks -= 1;
+        wrongQuestions.push({ questionNumber: q, subject, selectedOption: studentEntry.selectedOption, correctOption });
+      }
     }
-  }
+
+    // Section B (36-50 of total 50) - Only first 10 attempted count
+    const sectionBStart = start + 35;
+    const attemptedB = [];
+    for (let q = sectionBStart; q <= end; q++) {
+      const studentEntry = studentMap.get(q);
+      if (studentEntry && studentEntry.selectedOption) {
+        attemptedB.push(q);
+      }
+    }
+
+    const countedB = attemptedB.slice(0, 10);
+    const uncountedB = attemptedB.slice(10);
+
+    for (let q = sectionBStart; q <= end; q++) {
+      const correctOption = answerKeyMap.get(q);
+      const studentEntry = studentMap.get(q);
+      if (!correctOption) continue;
+
+      if (!studentEntry || !studentEntry.selectedOption) {
+        unattemptedCount += 1;
+        continue;
+      }
+
+      if (countedB.includes(q)) {
+        if (studentEntry.selectedOption === correctOption) {
+          correctCount += 1;
+          blockMarks += 4;
+        } else {
+          incorrectCount += 1;
+          blockMarks -= 1;
+          wrongQuestions.push({ questionNumber: q, subject, selectedOption: studentEntry.selectedOption, correctOption });
+        }
+      } else {
+        // Not counted
+      }
+    }
+    return blockMarks;
+  };
+
+  physicsMarks = processBlock(1, 50, "physics");
+  chemistryMarks = processBlock(51, 100, "chemistry");
+  // Biology is two blocks of 50 in NEET (Botany + Zoology)
+  biologyMarks = processBlock(101, 150, "biology") + processBlock(151, 200, "biology");
+
+  totalMarks = physicsMarks + chemistryMarks + biologyMarks;
 
   return {
     physicsMarks,

@@ -10,13 +10,23 @@ cloudinary.config({
 
 export const uploadMedia = async (file, isPdf = false) => {
   try {
-    const fileUri = `data:${file.mimetype};base64,${file.buffer.toString(
-      "base64"
-    )}`;
-    const uploadResponse = await cloudinary.uploader.upload(fileUri, {
-      resource_type: isPdf ? "raw" : "auto",
-      access_mode: "public",
-    });
+    let uploadResponse;
+    if (typeof file === 'string') {
+      // If a path is passed
+      uploadResponse = await cloudinary.uploader.upload(file, {
+        resource_type: isPdf ? "raw" : "auto",
+        access_mode: "public",
+      });
+    } else {
+      // If a multer memory file is passed
+      const fileUri = `data:${file.mimetype};base64,${file.buffer.toString(
+        "base64"
+      )}`;
+      uploadResponse = await cloudinary.uploader.upload(fileUri, {
+        resource_type: isPdf ? "raw" : "auto",
+        access_mode: "public",
+      });
+    }
     return uploadResponse;
   } catch (error) {
     console.log(error);
@@ -32,12 +42,12 @@ export const deleteMediaFromCloudinary = async (publicId) => {
 };
 
 export const deleteVideoFromCloudinary = async (publicId) => {
-    try {
-        await cloudinary.uploader.destroy(publicId,{resource_type:"video"});
-    } catch (error) {
-        console.log(error);
-        
-    }
+  try {
+    await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
+  } catch (error) {
+    console.log(error);
+
+  }
 };
 export const deletePdfFromCloudinary = async (publicId) => {
   try {
