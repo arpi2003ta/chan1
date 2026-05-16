@@ -8,8 +8,11 @@ const StudentSidebar = ({ canChat = false, onOpenChat }) => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const navItems = STUDENT_NAV_ITEMS;
-
+    /*const navItems = STUDENT_NAV_ITEMS;*/
+    // show only student items
+    const navItems = STUDENT_NAV_ITEMS.filter(
+        (item) => item.role !== "instructor"
+    );
     return (
         <aside className="hidden lg:flex w-64 flex-col fixed left-0 top-16 bottom-0 border-r bg-background z-40">
             <div className="px-4 py-4 border-b">
