@@ -95,7 +95,7 @@ const Navbar = () => {
           <div className="flex items-center gap-2">
             <School size={"30"} />
             <h1
-              onClick={() => navigate("/")}
+              onClick={() => navigate(user?.role === "instructor" ? "/admin/dashboard" : "/")}
               className="hidden md:block font-extrabold text-2xl cursor-pointer"
             >
               SmartEdu
